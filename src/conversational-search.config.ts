@@ -16,7 +16,7 @@ export const CONVERSATIONAL_SEARCH_DEFAULTS = {
   enabledByDefault: true,
   
   /** default topic - set for experiment since UI is hidden */
-  defaultTopic: 'General Conversation',
+  defaultTopic: 'Should Cell Phones Be Banned in Schools?',
   
   defaultStandpoint: 'supporting' as Standpoint,
   

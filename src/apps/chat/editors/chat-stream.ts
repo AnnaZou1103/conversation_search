@@ -23,7 +23,16 @@ export async function runAssistantUpdatingState(conversationId: string, history:
     ? history[history.length - 1].text 
     : '';
 
-  // Try to enhance with conversational search
+  // Create a blank and 'typing' message for the assistant IMMEDIATELY
+  // This gives instant feedback to the user while search happens in background
+  const assistantMessageId = createAssistantTypingMessage(conversationId, assistantLlmId, systemPurpose, 'Searching...');
+
+  // When an abort controller is set, the UI switches to the "stop" mode
+  const controller = new AbortController();
+  const { startTyping, editMessage } = useChatStore.getState();
+  startTyping(conversationId, controller);
+
+  // Now try to enhance with conversational search (in background while showing typing)
   let enhancedHistory = history;
   let assistantResponseText = '';
   let retrievedContext: any[] | undefined;
@@ -33,19 +42,6 @@ export async function runAssistantUpdatingState(conversationId: string, history:
       const searchResult = await processUserMessageWithSearch(lastUserMessage, history);
       
       if (searchResult.shouldEnhance && searchResult.enhancedSystemMessage) {
-        // Save user message first (prepareHistoryWithSearchContext doesn't call setMessages)
-        useChatStore.getState().setMessages(conversationId, history);
-        
-        // Save search configuration to conversation (standpoint and strategy)
-        const searchStore = useConversationalSearchStore.getState();
-        if (searchStore.searchState) {
-          useChatStore.getState().setSearchConfig(conversationId, {
-            topic: searchStore.searchState.topic,
-            standpoint: searchStore.searchState.standpoint,
-            strategy: searchStore.searchState.strategy,
-          });
-        }
-        
         // Use enhanced system message with retrieved context
         enhancedHistory = prepareHistoryWithSearchContext(
           history,
@@ -63,26 +59,22 @@ export async function runAssistantUpdatingState(conversationId: string, history:
           }));
         }
       } else {
-        // Fall back to normal system message update (this calls setMessages internally)
+        // Fall back to normal system message update
         enhancedHistory = updatePurposeInHistory(conversationId, history, systemPurpose);
       }
     } catch (error) {
       console.error('Error in conversational search, falling back to normal mode:', error);
-      // updatePurposeInHistory calls setMessages internally
       enhancedHistory = updatePurposeInHistory(conversationId, history, systemPurpose);
     }
   } else {
-    // No user message, use normal system message update (this calls setMessages internally)
+    // No user message, use normal system message update
     enhancedHistory = updatePurposeInHistory(conversationId, history, systemPurpose);
   }
 
-  // create a blank and 'typing' message for the assistant
-  const assistantMessageId = createAssistantTypingMessage(conversationId, assistantLlmId, enhancedHistory[0].purposeId, '...');
-
-  // when an abort controller is set, the UI switches to the "stop" mode
-  const controller = new AbortController();
-  const { startTyping, editMessage } = useChatStore.getState();
-  startTyping(conversationId, controller);
+  // Update the assistant message purpose after search is complete
+  if (enhancedHistory[0]?.purposeId) {
+    editMessage(conversationId, assistantMessageId, { purposeId: enhancedHistory[0].purposeId }, false);
+  }
 
   // stream the assistant's messages
   await streamAssistantMessage(assistantLlmId, enhancedHistory, controller.signal, (updatedMessage) => {

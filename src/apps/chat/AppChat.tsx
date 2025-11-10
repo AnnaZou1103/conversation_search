@@ -126,7 +126,15 @@ export function AppChat() {
       const chatModeId = useChatModeStore.getState().chatModeId;
       if (chatModeId === 'draw-imagine-plus')
         return await handleImagineFromText(conversationId, userText);
-      return await handleExecuteConversation(chatModeId, conversationId, [...conversation.messages, createDMessage('user', userText)]);
+      
+      // Create new history with user message
+      const newHistory = [...conversation.messages, createDMessage('user', userText)];
+      
+      // Save user message immediately so it displays right away
+      setMessages(conversationId, newHistory);
+      
+      // Then execute the conversation to get assistant response
+      return await handleExecuteConversation(chatModeId, conversationId, newHistory);
     }
   };
 

@@ -37,10 +37,10 @@ export function AppNews() {
           <Card>
           <CardContent sx={{ position: 'relative', pr:0 }}>
           <Typography level='h2' fontSize="xl"sx={{ mb: 0.5 }}  component='div'>Conversational Search Task</Typography>
-          In this task, you will have a conversation with a chatbot to explore information about various topics.
+          In this task, you will have a conversation with a chatbot to explore information about a topic.
           <ul style={{ marginTop: 8, marginBottom: 8, paddingInlineStart: 24 }}>
               <li>
-                  Ask the chatbot about topics you&apos;re interested in learning about.
+                  Ask the chatbot about a specific topic.
               </li>
               <li>The chatbot will provide helpful information to answer your questions.</li>
               <li>You can ask follow-up questions to explore topics in more depth.</li>
@@ -51,19 +51,6 @@ export function AppNews() {
           </Card>
         </Container>
 
-        {/* <Container disableGutters maxWidth='sm'>
-          <Card>
-          <CardContent sx={{ position: 'relative', pr:0 }}>
-          <Typography level='h2' fontSize="xl"sx={{ mb: 0.5 }}  component='div'>Job Interview</Typography>
-            Your task is to participate in a simulated job interview conducted by the chatbot.
-          <ul style={{ marginTop: 8, marginBottom: 8, paddingInlineStart: 24 }}>
-            <li>Respond to questions from the chatbot as if you are a candidate in a real interview. The interview will focus on assessing your Organizational Citizenship Behaviors (OCB) such as initiative, helping, and compliance.</li>
-              <li>A possible <b>scenario</b> is : you are applying for the position of a purchasing guide.</li>
-              <li>P.S. Please <b>don’t</b> disclose your private information during this conversational process. If you find it hard to start this task, ask the chatbot for an example.</li>
-          </ul>
-          </CardContent>
-          </Card>
-        </Container> */}
 
       <Button variant='solid' color='neutral' size='lg' component={Link} href='/' noLinkStyle>
         Got it!

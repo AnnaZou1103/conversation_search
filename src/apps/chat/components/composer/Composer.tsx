@@ -45,6 +45,7 @@ import { conversationToJsonV1 } from '../../trade/trade.client';
 import { apiAsyncNode } from '~/common/util/trpc.client';
 import { StoragePutSchema } from '../../trade/server/trade.router';
 import { addChatLinkItem } from '../../trade/store-sharing';
+import { useConversationalSearchStore } from '~/modules/pinecone/store-conversational-search';
 
 /// Text template helpers
 
@@ -446,10 +447,47 @@ export function Composer(props: {
     const conversation = findConversation(conversationId);
     if (!conversation) return;
 
+    // Update conversation with current search configuration before saving
+    const searchStore = useConversationalSearchStore.getState();
+    if (searchStore.searchState && searchStore.isEnabled) {
+      console.log('[Save] Saving search config:', {
+        topic: searchStore.searchState.topic,
+        standpoint: searchStore.searchState.standpoint,
+        strategy: searchStore.searchState.strategy,
+      });
+      useChatStore.getState().setSearchConfig(conversationId, {
+        topic: searchStore.searchState.topic,
+        standpoint: searchStore.searchState.standpoint,
+        strategy: searchStore.searchState.strategy,
+      });
+      // Re-fetch conversation after updating
+      const updatedConversation = findConversation(conversationId);
+      if (!updatedConversation) return;
+      console.log('[Save] Updated conversation:', {
+        id: updatedConversation.id,
+        searchTopic: updatedConversation.searchTopic,
+        standpoint: updatedConversation.standpoint,
+        strategy: updatedConversation.strategy,
+      });
+    } else {
+      console.log('[Save] Search not enabled or no search state');
+    }
+
     setChatLinkUploading(true);
     try {
-      const chatV1 = conversationToJsonV1(conversation);
-      const chatTitle = conversationTitle(conversation) || undefined;
+      // Get the latest conversation state (with updated search config)
+      const latestConversation = findConversation(conversationId);
+      if (!latestConversation) return;
+      
+      const chatV1 = conversationToJsonV1(latestConversation);
+      console.log('[Save] Saving to MongoDB:', {
+        conversationId,
+        searchTopic: chatV1.searchTopic,
+        standpoint: chatV1.standpoint,
+        strategy: chatV1.strategy,
+        messageCount: chatV1.messages.length,
+      });
+      const chatTitle = conversationTitle(latestConversation) || undefined;
       const response: StoragePutSchema = await apiAsyncNode.trade.storagePut.mutate({
         ownerId: conversationId,
         dataType: 'CHAT_V1',
@@ -700,7 +738,7 @@ export function Composer(props: {
                   <ButtonGroup variant={isWriteUser ? 'solid' : 'solid'} color={isReAct ? 'success' : (isFollowUp || isDraw || isDrawPlus) ? 'warning' : 'primary'} sx={{ flexGrow: 1 }}>
                     <Button
                       id="auto_trigger"
-                      fullWidth variant={isWriteUser ? 'soft' : 'solid'} color={isReAct ? 'success' : (isFollowUp || isDraw || isDrawPlus) ? 'warning' : 'primary'} disabled={!props.conversationId || !chatLLM}
+                      fullWidth variant={isWriteUser ? 'soft' : 'solid'} color={isReAct ? 'success' : (isFollowUp || isDraw || isDrawPlus) ? 'warning' : 'primary'} disabled={!props.conversationId || !chatLLM || !composeText.trim()}
                       onClick={handleSendClicked}
                       endDecorator={<SendIcon sx={{ fontSize: 18 }} />}
                     >

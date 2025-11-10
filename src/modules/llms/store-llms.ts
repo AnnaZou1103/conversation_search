@@ -183,6 +183,12 @@ export const useModelsStore = create<ModelsData & ModelsActions>()(
           if (!source) return null;
           return { ...llm, _source: source };
         }).filter(llm => !!llm) as DLLM[];
+        
+        // Force GPT-4o as default after rehydration if no model is selected or if current model is not available
+        const selectedIds = updateSelectedIds(state.llms, state.chatLLMId, state.fastLLMId, state.funcLLMId);
+        state.chatLLMId = selectedIds.chatLLMId;
+        state.fastLLMId = selectedIds.fastLLMId;
+        state.funcLLMId = selectedIds.funcLLMId;
       },
     }),
 );
