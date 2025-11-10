@@ -47,14 +47,19 @@ declare namespace NodeJS {
   interface ProcessEnv {
 
     // set in next.config.js and available to the client-side
-    HAS_SERVER_DB_PRISMA: boolean;
-    HAS_SERVER_KEYS_GOOGLE_CSE: boolean;
-    HAS_SERVER_KEY_ANTHROPIC?: boolean;
-    HAS_SERVER_KEY_AZURE_OPENAI?: boolean;
-    HAS_SERVER_KEY_ELEVENLABS: boolean;
-    HAS_SERVER_KEY_OPENAI?: boolean;
-    HAS_SERVER_KEY_OPENROUTER?: boolean;
-    HAS_SERVER_KEY_PRODIA: boolean;
+    // Note: Next.js env values are strings, so these are "true" or "false" strings
+    HAS_SERVER_DB_PRISMA: string;
+    HAS_SERVER_KEYS_GOOGLE_CSE: string;
+    HAS_SERVER_KEY_ANTHROPIC?: string;
+    HAS_SERVER_KEY_AZURE_OPENAI?: string;
+    HAS_SERVER_KEY_ELEVENLABS: string;
+    HAS_SERVER_KEY_OPENAI?: string;
+    HAS_SERVER_KEY_OPENROUTER?: string;
+    HAS_SERVER_KEY_PRODIA: string;
+
+    // Pinecone configuration
+    PINECONE_API_KEY?: string;
+    PINECONE_ASSISTANT_NAME?: string;
 
   }
 }

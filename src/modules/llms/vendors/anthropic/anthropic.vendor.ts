@@ -27,7 +27,7 @@ export const ModelVendorAnthropic: IModelVendor<SourceSetupAnthropic, LLMOptions
   rank: 13,
   location: 'cloud',
   instanceLimit: 1,
-  hasServerKey: !!process.env.HAS_SERVER_KEY_ANTHROPIC,
+  hasServerKey: process.env.HAS_SERVER_KEY_ANTHROPIC === 'true',
 
   // components
   Icon: AnthropicIcon,

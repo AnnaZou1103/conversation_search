@@ -33,7 +33,7 @@ export const ModelVendorOpenAI: IModelVendor<SourceSetupOpenAI, LLMOptionsOpenAI
   rank: 10,
   location: 'cloud',
   instanceLimit: 1,
-  hasServerKey: !!process.env.HAS_SERVER_KEY_OPENAI,
+  hasServerKey: process.env.HAS_SERVER_KEY_OPENAI === 'true',
 
   // components
   Icon: OpenAIIcon,
