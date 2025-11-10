@@ -3,7 +3,7 @@ import { apiAsync } from '~/common/util/trpc.client';
 import { useProdiaStore } from './store-prodia';
 
 
-export const requireUserKeyProdia = process.env.HAS_SERVER_KEY_PRODIA !== 'true';
+export const requireUserKeyProdia = typeof process === 'undefined' || process.env.HAS_SERVER_KEY_PRODIA !== 'true';
 
 export const canUseProdia = (): boolean => !!useProdiaStore.getState().prodiaModelId || !requireUserKeyProdia;
 

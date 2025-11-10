@@ -40,7 +40,7 @@ export const ModelVendorAzure: IModelVendor<SourceSetupAzure, LLMOptionsOpenAI, 
   rank: 14,
   location: 'cloud',
   instanceLimit: 2,
-  hasServerKey: process.env.HAS_SERVER_KEY_AZURE_OPENAI === 'true',
+  hasServerKey: typeof process !== 'undefined' && process.env.HAS_SERVER_KEY_AZURE_OPENAI === 'true',
 
   // components
   Icon: AzureIcon,

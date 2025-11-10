@@ -6,7 +6,7 @@ import type { SpeechInputSchema } from './elevenlabs.router';
 import { useElevenlabsStore } from './store-elevenlabs';
 
 
-export const requireUserKeyElevenLabs = process.env.HAS_SERVER_KEY_ELEVENLABS !== 'true';
+export const requireUserKeyElevenLabs = typeof process === 'undefined' || process.env.HAS_SERVER_KEY_ELEVENLABS !== 'true';
 
 export const canUseElevenLabs = (): boolean => !!useElevenlabsStore.getState().elevenLabsVoiceId || !requireUserKeyElevenLabs;
 

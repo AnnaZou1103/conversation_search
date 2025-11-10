@@ -77,7 +77,7 @@ export function ChatDrawerItems(props: {
     }
     if (closeMenu)
       closeLayoutDrawerMenu();
-  }, [setActiveConversationId]);
+  }, [setActiveConversationId, getPairedEvaluationId, setActiveEvaluationId, getConversationById, setEvaluationStatus]);
 
   const handleConversationDelete = React.useCallback((conversationId: string) => {
     if (!singleChat && conversationId)

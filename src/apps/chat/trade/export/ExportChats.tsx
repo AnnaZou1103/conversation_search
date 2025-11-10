@@ -23,7 +23,7 @@ import { ExportedPublish } from './ExportedPublish';
 
 
 // global flag to enable/disable the sharing mechanics
-const ENABLE_SHARING = process.env.HAS_SERVER_DB_PRISMA === 'true';
+const ENABLE_SHARING = typeof process !== 'undefined' && process.env.HAS_SERVER_DB_PRISMA === 'true';
 
 
 export type ExportConfig = { dir: 'export', conversationId: string | null };
