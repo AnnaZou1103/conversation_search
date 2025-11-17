@@ -18,9 +18,9 @@ export const CONVERSATIONAL_SEARCH_DEFAULTS = {
   /** default topic - set for experiment since UI is hidden */
   defaultTopic: 'Should Cell Phones Be Banned in Schools?',
   
-  defaultStandpoint: 'supporting' as Standpoint,
+  defaultStandpoint: 'opposing' as Standpoint,
   
-  defaultStrategy: 'suggestion' as ConversationStrategy,
+  defaultStrategy: 'clarification' as ConversationStrategy,
   
   // ============================================
   // retrieval defaults
