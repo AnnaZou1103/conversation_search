@@ -90,17 +90,38 @@ export function updatePurposeInHistory(conversationId: string, history: DMessage
   systemMessage.text = systemPrompt;
   const { defaultSystemPurposeId } = require('../../../data') as { defaultSystemPurposeId: SystemPurposeId };
   systemMessage.purposeId = defaultSystemPurposeId;
-  console.log('[Chat] updatePurposeInHistory: system message set', { 
+
+  // Save initial system message if this is the first time with standpoint/strategy config
+  if ((standpoint || strategy) && !conversation?.initialSystemMessage) {
+    const initialSystemMessage = createDMessage('system', systemPrompt);
+    initialSystemMessage.purposeId = defaultSystemPurposeId;
+
+    // Save to conversation store
+    useChatStore.getState()._editConversation(conversationId, {
+      initialSystemMessage: initialSystemMessage
+    });
+
+    console.log('[Chat] Saved initial system message with standpoint/strategy config', {
+      conversationId,
+      hasStandpoint: !!standpoint,
+      standpoint,
+      hasStrategy: !!strategy,
+      strategy,
+      initialMessageLength: initialSystemMessage.text.length
+    });
+  }
+
+  console.log('[Chat] updatePurposeInHistory: system message set', {
     phase,
-    textLength: systemMessage.text.length, 
-    hasStandpoint: !!standpoint, 
+    textLength: systemMessage.text.length,
+    hasStandpoint: !!standpoint,
     standpointValue: standpoint,
     hasStrategy: !!strategy,
     strategyValue: strategy,
     hasTopic: !!topic,
     systemPromptPreview: systemPrompt.substring(0, 300)
   });
-  
+
   historyCopy.unshift(systemMessage);
   // Don't call setMessages here as it will abort the current request
   // The history will be updated when the assistant message is streamed

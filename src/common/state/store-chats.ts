@@ -34,6 +34,9 @@ export interface DConversation {
   strategy?: ConversationStrategy;   // Conversation strategy: 'suggestion' or 'clarification'
   stats?: ConversationStats;         // Conversation statistics for research tracking
   phase?: 'dialogue' | 'memo';       // Conversation phase: 'dialogue' (guiding) or 'memo' (service assistant)
+
+  // Initial system message with standpoint configuration (preserved for research)
+  initialSystemMessage?: DMessage;   // First system message containing standpoint/strategy config
   
   tokenCount: number;                 // f(messages, llmId)
   created: number;                    // created timestamp
