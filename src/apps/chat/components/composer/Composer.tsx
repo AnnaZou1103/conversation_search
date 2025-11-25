@@ -45,7 +45,6 @@ import { conversationToJsonV1 } from '../../trade/trade.client';
 import { apiAsyncNode } from '~/common/util/trpc.client';
 import { StoragePutSchema } from '../../trade/server/trade.router';
 import { addChatLinkItem } from '../../trade/store-sharing';
-import { useConversationalSearchStore } from '~/modules/pinecone/store-conversational-search';
 
 /// Text template helpers
 
@@ -450,39 +449,16 @@ export function Composer(props: {
     const conversation = findConversation(conversationId);
     if (!conversation) return;
 
-    // Update conversation with current search configuration and stats before saving
-    const searchStore = useConversationalSearchStore.getState();
-    if (searchStore.searchState && searchStore.isEnabled) {
-      console.log('[Save] Saving search config:', {
-        topic: searchStore.searchState.topic,
-        standpoint: searchStore.searchState.standpoint,
-        strategy: searchStore.searchState.strategy,
-      });
-      useChatStore.getState().setSearchConfig(conversationId, {
-        topic: searchStore.searchState.topic,
-        standpoint: searchStore.searchState.standpoint,
-        strategy: searchStore.searchState.strategy,
-      });
-      
-      // Update stats before saving
-      if (searchStore.searchState.stats) {
-        useChatStore.getState().setSearchStats(conversationId, searchStore.searchState.stats);
-        console.log('[Save] Saving search stats:', searchStore.searchState.stats);
-      }
-      
-      // Re-fetch conversation after updating
-      const updatedConversation = findConversation(conversationId);
-      if (!updatedConversation) return;
-      console.log('[Save] Updated conversation:', {
-        id: updatedConversation.id,
-        searchTopic: updatedConversation.searchTopic,
-        standpoint: updatedConversation.standpoint,
-        strategy: updatedConversation.strategy,
-        stats: updatedConversation.stats,
-      });
-    } else {
-      console.log('[Save] Search not enabled or no search state');
-    }
+    // Re-fetch conversation after updating
+    const updatedConversation = findConversation(conversationId);
+    if (!updatedConversation) return;
+    console.log('[Save] Updated conversation:', {
+      id: updatedConversation.id,
+      searchTopic: updatedConversation.searchTopic,
+      standpoint: updatedConversation.standpoint,
+      strategy: updatedConversation.strategy,
+      stats: updatedConversation.stats,
+    });
 
     setChatLinkUploading(true);
     try {

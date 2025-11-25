@@ -87,7 +87,6 @@ export function makeAvatar(messageAvatar: string | null, messageRole: DMessage['
       // display the purpose symbol
       if (messageOriginLLM === 'prodia')
         return <PaletteOutlinedIcon sx={iconSx} />;
-      // Always use emoji lightbulb for conversational search
       return <Box
         sx={{
           fontSize: '24px',

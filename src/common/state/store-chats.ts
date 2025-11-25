@@ -205,7 +205,6 @@ interface ChatActions {
   setAutoTitle: (conversationId: string, autoTitle: string) => void;
   setUserTitle: (conversationId: string, userTitle: string) => void;
   setSearchConfig: (conversationId: string, config: { topic?: string; standpoint?: Standpoint; strategy?: ConversationStrategy }) => void;
-  setSearchStats: (conversationId: string, stats: ConversationStats) => void;
   getPairedQuestionId: (conversationId: string, messageId: string) => string;
   isConversation: (conversation: DConversation)=>boolean;
   setPairedEvaluationId:(conversationId: string, evaluationId: string)=>void;
@@ -527,9 +526,6 @@ export const useChatStore = create<ChatState & ChatActions>()(devtools(
             ...(config.standpoint !== undefined && { standpoint: config.standpoint }),
             ...(config.strategy !== undefined && { strategy: config.strategy }),
           }),
-
-      setSearchStats: (conversationId: string, stats: ConversationStats) =>
-        get()._editConversation(conversationId, { stats }),
 
       appendEphemeral: (conversationId: string, ephemeral: DEphemeral) =>
         get()._editConversation(conversationId, conversation => {

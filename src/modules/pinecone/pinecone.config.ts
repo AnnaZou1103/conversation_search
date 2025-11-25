@@ -1,18 +1,14 @@
 /**
  * Pinecone Configuration
  * Configure your Pinecone API key and assistant name here
- * 
- * Note: Default retrieval parameters are now managed in conversational-search.config.ts
  */
-
-import { CONVERSATIONAL_SEARCH_DEFAULTS } from '~/conversational-search.config';
 
 export const PINECONE_CONFIG = {
   apiKey: process.env.PINECONE_API_KEY || '',
   assistantName: process.env.PINECONE_ASSISTANT_NAME || 'conversation-search-assistant',
-  // Default retrieval parameters (imported from config)
-  defaultTopK: CONVERSATIONAL_SEARCH_DEFAULTS.defaultTopK,
-  defaultSnippetSize: CONVERSATIONAL_SEARCH_DEFAULTS.defaultSnippetSize,
+  // Default retrieval parameters
+  defaultTopK: 10,
+  defaultSnippetSize: 1280,
 };
 
 // Validate configuration

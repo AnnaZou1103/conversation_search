@@ -18,13 +18,27 @@ export function updatePurposeInHistory(conversationId: string, history: DMessage
   const systemMessageIndex = history.findIndex(m => m.role === 'system');
   const systemMessage: DMessage = systemMessageIndex >= 0 ? history.splice(systemMessageIndex, 1)[0] : createDMessage('system', '');
   
-  // Use fallback system prompt if no system message exists yet
+  // Use system purpose message if no system message exists yet
   if (!systemMessage.updated && !systemMessage.text) {
-    const { FALLBACK_SYSTEM_PROMPT } = require('~/conversational-search.config');
-    systemMessage.text = FALLBACK_SYSTEM_PROMPT.replaceAll('{{Today}}', new Date().toISOString().split('T')[0]);
+    const { defaultSystemPurposeId } = require('../../../data') as { defaultSystemPurposeId: SystemPurposeId };
+    const purpose = SystemPurposes[defaultSystemPurposeId as SystemPurposeId];
+    console.log('[Chat] updatePurposeInHistory: setting system message', { defaultSystemPurposeId, hasPurpose: !!purpose });
+    if (purpose) {
+      systemMessage.text = purpose.systemMessage.replaceAll('{{Today}}', new Date().toISOString().split('T')[0]);
+      systemMessage.purposeId = defaultSystemPurposeId;
+      console.log('[Chat] updatePurposeInHistory: system message set', { textLength: systemMessage.text.length, purposeId: systemMessage.purposeId });
+    } else {
+      // Fallback to FALLBACK_SYSTEM_PROMPT if purpose not found
+      const { FALLBACK_SYSTEM_PROMPT } = require('~/conversational-search.config');
+      systemMessage.text = FALLBACK_SYSTEM_PROMPT.replaceAll('{{Today}}', new Date().toISOString().split('T')[0]);
+      console.log('[Chat] updatePurposeInHistory: using fallback system prompt');
+    }
+  } else {
+    console.log('[Chat] updatePurposeInHistory: system message already exists', { hasText: !!systemMessage.text, hasUpdated: !!systemMessage.updated });
   }
   
   history.unshift(systemMessage);
-  useChatStore.getState().setMessages(conversationId, history);
+  // Don't call setMessages here as it will abort the current request
+  // The history will be updated when the assistant message is streamed
   return history;
 }

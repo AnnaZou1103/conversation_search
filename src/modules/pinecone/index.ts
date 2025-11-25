@@ -62,17 +62,4 @@ export {
   SimpleFileUploadButton,
 } from './FileUploadComponent';
 
-// ============================================
-// Conversational Search
-// ============================================
-export {
-  initializeSearchState,
-  generateSystemPrompt,
-  retrieveContextForQuery,
-  updateSearchState,
-} from './conversational-search';
-
-// Note: Store and settings components are exported separately if needed
-// export { useConversationalSearch } from './store-conversational-search';
-// export { ConversationalSearchSettings } from './ConversationalSearchSettings';
 
