@@ -20,9 +20,9 @@ const dataSchema = z.object({}).passthrough();
 const storagePutInputSchema = z.object({
   ownerId: z.string(),
   dataType: dataTypesSchema,
-  dataTitle: z.string().optional(),
   dataObject: dataSchema,
   studyId: z.string().optional(),
+  searchTopic: z.string().optional(),
   expiresSeconds: z.number().optional(),
 });
 
@@ -50,9 +50,9 @@ export const storageGetOutputSchema = z.union([
   z.object({
     type: z.literal('success'),
     dataType: dataTypesSchema,
-    dataTitle: z.string().nullable(),
     dataObject: dataSchema,
     studyId: z.string().nullable(),
+    searchTopic: z.string().nullable(),
     storedAt: z.date(),
     expiresAt: z.date().nullable(),
   }),
@@ -85,7 +85,15 @@ export const storagePutProcedure =
     .output(storagePutOutputSchema)
     .mutation(async ({ input }) => {
 
-      const { ownerId, dataType, dataTitle, dataObject, studyId, expiresSeconds} = input;
+      const { ownerId, dataType, dataObject, studyId, searchTopic, expiresSeconds} = input;
+
+      // Extract studyId from dataObject if it exists there, otherwise use the top-level studyId (for backwards compatibility)
+      const studyIdFromData = (dataObject as any)?.studyId;
+      const finalStudyId = studyIdFromData || studyId || null;
+      
+      // Extract searchTopic from dataObject if it exists there, otherwise use the top-level searchTopic (for backwards compatibility)
+      const searchTopicFromData = (dataObject as any)?.searchTopic;
+      const finalSearchTopic = searchTopicFromData || searchTopic || null;
 
       const record = await prisma.linkStorage.findUnique({
         where: {
@@ -106,16 +114,16 @@ export const storagePutProcedure =
             ownerId: ownerId || uuidv4(),
             visibility: LinkStorageVisibility.UNLISTED,
             dataType,
-            dataTitle,
             dataSize: JSON.stringify(dataObject).length, // data size estimate
             data: dataObject,
-            studyId: studyId || null,
+            studyId: finalStudyId, // Extract from dataObject or use provided value
+            searchTopic: finalSearchTopic, // Extract from dataObject or use provided value
             expiresAt: expiresSeconds === 0
               ? undefined // never expires
               : new Date(Date.now() + 1000 * (expiresSeconds || DEFAULT_EXPIRES_SECONDS)), // default
             deletionKey: uuidv4(),
             isDeleted: false,
-          },
+          } as any, // Type assertion needed until Prisma Client types are regenerated
         });
 
         return {
@@ -125,13 +133,21 @@ export const storagePutProcedure =
         };
       }else{
         let { id: objectId, ...rest } = await prisma.linkStorage.update({
+          select: {
+            id: true,
+            ownerId: true,
+            createdAt: true,
+            expiresAt: true,
+            deletionKey: true,
+          },
           where: {
             ownerId: ownerId,
           },
           data: {
             data: dataObject,
-            ...(studyId !== undefined && { studyId: studyId || null }),
-          },
+            studyId: finalStudyId, // Extract from dataObject or use provided value
+            searchTopic: finalSearchTopic, // Extract from dataObject or use provided value
+          } as any, // Type assertion needed until Prisma Client types are regenerated
         });
         return {
           type: 'success',
@@ -156,12 +172,12 @@ export const storageGetProcedure =
       const result = await prisma.linkStorage.findUnique({
         select: {
           dataType: true,
-          dataTitle: true,
           data: true,
           studyId: true,
+          searchTopic: true,
           createdAt: true,
           expiresAt: true,
-        },
+        } as any, // Type assertion needed until Prisma Client types are regenerated
         where: {
           id: objectId,
           ownerId: ownerId || undefined,
@@ -204,12 +220,19 @@ export const storageGetProcedure =
         }).catch(() => null);
       }
 
+      // Extract studyId and searchTopic from dataObject if available, otherwise use the top-level values (for backwards compatibility)
+      const dataObject = result.data as any;
+      const studyIdFromData = dataObject?.studyId;
+      const finalStudyId = studyIdFromData || result.studyId;
+      const searchTopicFromData = dataObject?.searchTopic;
+      const finalSearchTopic = searchTopicFromData || (result as any).searchTopic; // Type assertion needed until Prisma Client types are regenerated
+
       return {
         type: 'success',
         dataType: result.dataType,
-        dataTitle: result.dataTitle,
-        dataObject: result.data as any,
-        studyId: result.studyId,
+        dataObject: dataObject,
+        studyId: finalStudyId,
+        searchTopic: finalSearchTopic,
         storedAt: result.createdAt,
         expiresAt: result.expiresAt,
       };

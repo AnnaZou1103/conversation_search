@@ -27,13 +27,15 @@ export function ChatDrawerItems(props: {
   const [grouping] = React.useState<ListGrouping>('off');
 
   // external state
-  const { conversationIDs, topNewConversationId, maxChatMessages, setActiveConversationId, setActiveEvaluationId, getPairedEvaluationId, getConversationById, createConversation, deleteConversation,setEvaluationStatus} = useChatStore(state => ({
+  const { conversationIDs, topNewConversationId, maxChatMessages, setActiveConversationId, setActiveEvaluationId, setActiveMemoId, getPairedEvaluationId, getPairedMemoId, getConversationById, createConversation, deleteConversation,setEvaluationStatus} = useChatStore(state => ({
     conversationIDs: state.conversations.filter(state.isConversation).map(conversation => conversation.id),
     topNewConversationId: state.conversations.length ? state.conversations[0].messages.length === 0 ? state.conversations[0].id : null : null,
     maxChatMessages: state.conversations.reduce((longest, conversation) => Math.max(longest, conversation.messages.length), 0),
     setActiveConversationId: state.setActiveConversationId,
     setActiveEvaluationId: state.setActiveEvaluationId,
+    setActiveMemoId: state.setActiveMemoId,
     getPairedEvaluationId: state.getPairedEvaluationId,
+    getPairedMemoId: state.getPairedMemoId,
     getConversationById: state.getConversationById,
     createConversation: state.createConversation,
     deleteConversation: state.deleteConversation,
@@ -75,9 +77,18 @@ export function ChatDrawerItems(props: {
       setEvaluationStatus(false);
       setActiveEvaluationId(null);
     }
+    
+    // Handle memo conversation
+    const pairedMemoId = getPairedMemoId(conversationId);
+    if (pairedMemoId != '') {
+      setActiveMemoId(pairedMemoId);
+    } else {
+      setActiveMemoId(null);
+    }
+    
     if (closeMenu)
       closeLayoutDrawerMenu();
-  }, [setActiveConversationId, getPairedEvaluationId, setActiveEvaluationId, getConversationById, setEvaluationStatus]);
+  }, [setActiveConversationId, getPairedEvaluationId, setActiveEvaluationId, getPairedMemoId, setActiveMemoId, getConversationById, setEvaluationStatus]);
 
   const handleConversationDelete = React.useCallback((conversationId: string) => {
     if (!singleChat && conversationId)

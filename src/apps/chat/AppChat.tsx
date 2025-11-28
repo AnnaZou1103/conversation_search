@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
+import { v4 as uuidv4 } from 'uuid';
 
 import { Box, Button } from '@mui/joy';
 
@@ -46,13 +47,14 @@ export function AppChat() {
   const [flattenConversationId, setFlattenConversationId] = React.useState<string | null>(null);
 
   // external state
-  const { activeConversationId, activeEvaluationId, isConversationEmpty, hasAnyContent, duplicateConversation, deleteAllConversations, setMessages, setAutoTitle, setActiveEvaluationId, setSearchConfig, setConversationPhase, _editConversation } = useChatStore(state => {
+  const { activeConversationId, activeEvaluationId, activeMemoId, isConversationEmpty, hasAnyContent, duplicateConversation, deleteAllConversations, setMessages, setAutoTitle, setActiveEvaluationId, setActiveMemoId, setSearchConfig, setConversationPhase, _editConversation, getPairedMemoId } = useChatStore(state => {
     const conversation = state.conversations.find(conversation => conversation.id === state.activeConversationId);
     const isConversationEmpty = conversation ? !conversation.messages.length : true;
     const hasAnyContent = state.conversations.length > 1 || !isConversationEmpty;
     return {
       activeConversationId: state.activeConversationId,
       activeEvaluationId: state.activeEvaluationId,
+      activeMemoId: state.activeMemoId,
       isConversationEmpty,
       hasAnyContent,
       duplicateConversation: state.duplicateConversation,
@@ -60,9 +62,11 @@ export function AppChat() {
       setMessages: state.setMessages,
       setAutoTitle: state.setAutoTitle,
       setActiveEvaluationId: state.setActiveEvaluationId,
+      setActiveMemoId: state.setActiveMemoId,
       setSearchConfig: state.setSearchConfig,
       setConversationPhase: state.setConversationPhase,
       _editConversation: state._editConversation,
+      getPairedMemoId: state.getPairedMemoId,
     };
   }, shallow);
 
@@ -156,6 +160,20 @@ export function AppChat() {
       };
     }
     return initialmessage;
+  }, [currentConversation?.searchTopic]);
+
+  // Generate memo initial greeting message
+  const getMemoInitialMessage = React.useMemo(() => {
+    const topic = currentConversation?.searchTopic;
+    // Use a fixed ID prefix to ensure consistency, but make it unique per topic
+    const messageId = `memo-initial-${topic || 'default'}`;
+    return {
+      ...initialmessage,
+      id: messageId,
+      text: topic
+        ? `Hello! I'm here to help you prepare your opinion memo on "${topic}".\nShare your thoughts, and I'll help you shape them into a clear and effective memo.`
+        : `Hello! I'm here to help you prepare your opinion memo.\nShare your thoughts, and I'll help you shape them into a clear and effective memo.`,
+    };
   }, [currentConversation?.searchTopic]);
 
 
@@ -316,6 +334,20 @@ export function AppChat() {
     throw new Error('Function not implemented.');
   }
 
+  // Check if we should show memo split screen
+  // When activeMemoId exists, show split screen with dialogue on left and memo on right
+  const shouldShowMemoSplit = !!activeMemoId;
+
+  // Auto-set activeMemoId when switching conversations if memo exists
+  React.useEffect(() => {
+    if (activeConversationId && !activeMemoId) {
+      const memoId = getPairedMemoId(activeConversationId);
+      if (memoId) {
+        setActiveMemoId(memoId);
+      }
+    }
+  }, [activeConversationId, activeMemoId, getPairedMemoId, setActiveMemoId]);
+
   return <>
     {/* Study ID Input Modal - shown before topic selection */}
     <StudyIdInputModal
@@ -329,69 +361,130 @@ export function AppChat() {
       onSelectTopic={handleTopicSelect}
     />
 
-    <Allotment css={{backgroundColor: '#EAEEF6'}}>
-    <div style={{overflow: 'auto', height:'100%', width: '100%'}}>
-    <ChatMessage
-          key={'msg-' + getInitialMessage.id} message={getInitialMessage} diffText={undefined}
-          isBottom={true}
-          onMessageDelete={undefined}
-          onMessageEdit={newText => handleMessageDelete(getInitialMessage.id)}
-          onMessageRunFrom={undefined}
-          onImagine={undefined}
-      />
-    <ChatMessageList
-      conversationId={activeConversationId}
-      isMessageSelectionMode={isMessageSelectionMode} setIsMessageSelectionMode={setIsMessageSelectionMode}
-      onExecuteChatHistory={handleExecuteChatHistory}
-      onImagineFromText={handleImagineFromText}
-      sx={{
-        flexGrow: 1,
-        backgroundColor: 'background.level1',
-        overflowY: 'auto', 
-        // overflowY: 'hidden'
-        minHeight: 96,
-      }} />
-      </div>
-
-      {activeEvaluationId &&(
-         <div style={{overflow: 'auto', height:'100%', width: '100%'}}>
+    {shouldShowMemoSplit ? (
+      // Split screen: Left = Dialogue (read-only), Right = Memo (editable)
+      <Allotment 
+        css={{backgroundColor: '#EAEEF6'}}
+        defaultSizes={[1, 2]}  // 左侧1/3，右侧2/3
+      >
+        {/* Left Panel: Original Dialogue (Read-only) */}
+        <div style={{overflow: 'auto', height:'100%', width: '100%'}}>
+          <ChatMessage
+            key={'msg-' + getInitialMessage.id} message={getInitialMessage} diffText={undefined}
+            isBottom={true}
+            onMessageDelete={undefined}
+            onMessageEdit={newText => handleMessageDelete(getInitialMessage.id)}
+            onMessageRunFrom={undefined}
+            onImagine={undefined}
+          />
           <ChatMessageList
-          conversationId={activeEvaluationId}
-          isMessageSelectionMode={isMessageSelectionMode} setIsMessageSelectionMode={setIsMessageSelectionMode}
-          onExecuteChatHistory={handleExecuteChatHistory}
-          onImagineFromText={handleImagineFromText}
-          sx={{
-            flexGrow: 1,
-            backgroundColor: 'background.level1',
-            overflowY: 'auto', 
-            // overflowY: 'hidden'
-            minHeight: 96,
-          }} />
+            conversationId={activeConversationId}
+            isMessageSelectionMode={false} setIsMessageSelectionMode={() => {}}
+            onExecuteChatHistory={() => {}}
+            onImagineFromText={() => {}}
+            sx={{
+              flexGrow: 1,
+              backgroundColor: 'background.level1',
+              overflowY: 'auto', 
+              minHeight: 96,
+            }} />
+        </div>
+
+        {/* Right Panel: Memo Conversation (Editable) */}
+        <div style={{display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden'}}>
+          <div style={{flex: 1, overflow: 'auto'}}>
+            {/* Memo Initial Greeting Message */}
+            <ChatMessage
+              key={'memo-msg-' + getMemoInitialMessage.id} 
+              message={getMemoInitialMessage} 
+              diffText={undefined}
+              isBottom={true}
+              onMessageDelete={undefined}
+              onMessageEdit={newText => handleMessageDelete(getMemoInitialMessage.id)}
+              onMessageRunFrom={undefined}
+              onImagine={undefined}
+            />
+            <ChatMessageList
+              conversationId={activeMemoId}
+              isMessageSelectionMode={isMessageSelectionMode} setIsMessageSelectionMode={setIsMessageSelectionMode}
+              onExecuteChatHistory={handleExecuteChatHistory}
+              onImagineFromText={handleImagineFromText}
+              sx={{
+                flexGrow: 1,
+                backgroundColor: 'background.level1',
+                overflowY: 'auto', 
+                minHeight: 96,
+              }} />
           </div>
-        )
-      }
-    </Allotment>
+          <Composer
+            conversationId={activeMemoId} messageId={null}
+            isDeveloperMode={false}
+            onSendMessage={handleSendUserMessage}
+            sx={{
+              zIndex: 21,
+              backgroundColor: 'background.surface',
+              borderTop: `1px solid`,
+              borderTopColor: 'divider',
+              p: { xs: 1, md: 2 },
+            }} />
+        </div>
+      </Allotment>
+    ) : (
+      // Normal single screen view
+      <>
+        <Allotment css={{backgroundColor: '#EAEEF6'}}>
+          <div style={{overflow: 'auto', height:'100%', width: '100%'}}>
+            <ChatMessage
+              key={'msg-' + getInitialMessage.id} message={getInitialMessage} diffText={undefined}
+              isBottom={true}
+              onMessageDelete={undefined}
+              onMessageEdit={newText => handleMessageDelete(getInitialMessage.id)}
+              onMessageRunFrom={undefined}
+              onImagine={undefined}
+            />
+            <ChatMessageList
+              conversationId={activeConversationId}
+              isMessageSelectionMode={isMessageSelectionMode} setIsMessageSelectionMode={setIsMessageSelectionMode}
+              onExecuteChatHistory={handleExecuteChatHistory}
+              onImagineFromText={handleImagineFromText}
+              sx={{
+                flexGrow: 1,
+                backgroundColor: 'background.level1',
+                overflowY: 'auto', 
+                minHeight: 96,
+              }} />
+          </div>
 
-    {/* <Ephemerals
-      conversationId={activeConversationId}
-      sx={{
-        // flexGrow: 0.1,
-        flexShrink: 0.5,
-        overflowY: 'auto',
-        minHeight: 64,
-      }} /> */}
+          {activeEvaluationId &&(
+            <div style={{overflow: 'auto', height:'100%', width: '100%'}}>
+              <ChatMessageList
+              conversationId={activeEvaluationId}
+              isMessageSelectionMode={isMessageSelectionMode} setIsMessageSelectionMode={setIsMessageSelectionMode}
+              onExecuteChatHistory={handleExecuteChatHistory}
+              onImagineFromText={handleImagineFromText}
+              sx={{
+                flexGrow: 1,
+                backgroundColor: 'background.level1',
+                overflowY: 'auto', 
+                minHeight: 96,
+              }} />
+            </div>
+          )}
+        </Allotment>
 
-    <Composer
-      conversationId={activeConversationId} messageId={null}
-      isDeveloperMode={false}
-      onSendMessage={handleSendUserMessage}
-      sx={{
-        zIndex: 21, // position: 'sticky', bottom: 0,
-        backgroundColor: 'background.surface',
-        borderTop: `1px solid`,
-        borderTopColor: 'divider',
-        p: { xs: 1, md: 2 },
-      }} />
+        <Composer
+          conversationId={activeConversationId} messageId={null}
+          isDeveloperMode={false}
+          onSendMessage={handleSendUserMessage}
+          sx={{
+            zIndex: 21,
+            backgroundColor: 'background.surface',
+            borderTop: `1px solid`,
+            borderTopColor: 'divider',
+            p: { xs: 1, md: 2 },
+          }} />
+      </>
+    )}
 
 
     {/* Import / Export  */}

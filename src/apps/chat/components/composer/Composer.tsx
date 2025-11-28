@@ -183,6 +183,8 @@ export function Composer(props: {
     return state.isEvaluationCompleted;
   })
 
+  const activeMemoId = useChatStore(state => state.activeMemoId);
+
   // Check if conversation has been used (has more than just the initial greeting)
   // Get conversation phase for Save button logic and phase switch button
   const conversation = useChatStore(state => 
@@ -192,35 +194,17 @@ export function Composer(props: {
   const hasTopic = !!conversation?.searchTopic;
   // Check if user has sent at least one message
   const hasUserMessages = conversation?.messages.some(msg => msg.role === 'user') || false;
-  // Check if user has sent at least one message AFTER switching to memo phase
-  // When phase switches to memo, the system message is updated
-  // We need to check if there are user messages sent after the phase switch
+  
+  // Hide Composer if activeMemoId exists and this is not the memo conversation
+  // (because the memo conversation will have its own Composer in the right panel)
+  const shouldHideComposer = activeMemoId && props.conversationId !== activeMemoId;
+  // Check if memo conversation has user messages
+  // For memo conversations (phase === 'memo'), check if there are any user messages
   const hasMemoMessages = React.useMemo(() => {
     if (conversationPhase !== 'memo' || !conversation) return false;
     
-    // Find all system messages
-    const systemMessages = conversation.messages.filter(msg => msg.role === 'system');
-    if (systemMessages.length === 0) return false;
-    
-    // Get the last system message (which is updated when phase switches to memo)
-    const lastSystemMessage = systemMessages[systemMessages.length - 1];
-    const lastSystemMessageIndex = conversation.messages.findIndex(msg => msg.id === lastSystemMessage.id);
-    
-    if (lastSystemMessageIndex === -1) return false;
-    
-    // Check if there are any user messages after the last system message update
-    // This means messages sent after phase switch to memo
-    const messagesAfterPhaseSwitch = conversation.messages.slice(lastSystemMessageIndex + 1);
-    const hasUserMessageAfterSwitch = messagesAfterPhaseSwitch.some(msg => msg.role === 'user');
-    
-    console.log('[Composer] Checking memo messages:', {
-      phase: conversationPhase,
-      lastSystemMessageIndex,
-      messagesAfterSwitch: messagesAfterPhaseSwitch.length,
-      hasUserMessageAfterSwitch,
-    });
-    
-    return hasUserMessageAfterSwitch;
+    // For memo conversations, just check if there are any user messages
+    return conversation.messages.some(msg => msg.role === 'user');
   }, [conversationPhase, conversation]);
 
   const hasConversationActivity = useChatStore(state => {
@@ -529,18 +513,25 @@ export function Composer(props: {
           sources: msg.retrievedContext?.map(c => c.source).filter(Boolean) || [],
         })),
       });
-      const chatTitle = conversationTitle(latestConversation) || undefined;
+      // Ensure studyId and searchTopic are in the dataObject
       const studyId = latestConversation.studyId || useStudyIdStore.getState().studyId || undefined;
+      const searchTopic = latestConversation.searchTopic || undefined;
+      const chatV1WithFields = {
+        ...chatV1,
+        ...(studyId && { studyId }),
+        ...(searchTopic && { searchTopic }),
+      };
       const response: StoragePutSchema = await apiAsyncNode.trade.storagePut.mutate({
         ownerId: conversationId,
         dataType: 'CHAT_V1',
-        dataTitle: chatTitle,
-        dataObject: chatV1,
-        studyId: studyId || undefined,
+        dataObject: chatV1WithFields,
+        studyId: undefined, // No longer pass studyId as top-level parameter (will be extracted from dataObject)
+        searchTopic: undefined, // No longer pass searchTopic as top-level parameter (will be extracted from dataObject)
         expiresSeconds: 0
       });
       setChatLinkResponse(response);
       if (response.type === 'success') {
+        const chatTitle = conversationTitle(latestConversation) || undefined;
         addChatLinkItem(chatTitle, response.objectId, response.createdAt, response.expiresAt, response.deletionKey);
       }
     } catch (error: any) {
@@ -554,11 +545,17 @@ export function Composer(props: {
 
   const handleSaveClicked = async () => {
       let currentConversationId = useChatStore.getState().activeConversationId;
-      if (!currentConversationId) return;
-      saveConversation(currentConversationId)
+      if (currentConversationId) {
+        await saveConversation(currentConversationId);
+      }
       let currentEvaluationId = useChatStore.getState().activeEvaluationId;
-      if (!currentEvaluationId) return;
-      saveConversation(currentEvaluationId)
+      if (currentEvaluationId) {
+        await saveConversation(currentEvaluationId);
+      }
+      let currentMemoId = useChatStore.getState().activeMemoId;
+      if (currentMemoId) {
+        await saveConversation(currentMemoId);
+      }
   };
 
 
@@ -578,6 +575,11 @@ export function Composer(props: {
         : props.isDeveloperMode
           ? 'Chat with me!'
           : /*isProdiaConfigured ?*/ 'Chat with me!' /*: 'Chat · /react · drop text files...'*/;
+
+  // Hide Composer if activeMemoId exists and this is not the memo conversation
+  if (shouldHideComposer) {
+    return null;
+  }
 
   return (
     <Box sx={props.sx}>
@@ -795,57 +797,23 @@ export function Composer(props: {
                 )}
             </Box>
 
-            {/* Phase Switch Button - shown below Chat button in a separate row */}
+            {/* Memo Creation Button - shown below Chat button in a separate row */}
             {hasTopic && (
               <Box sx={{ display: 'flex', mt: 1 }}>
                 <Button
                   fullWidth
                   variant="soft"
                   color="neutral"
-                  disabled={!hasUserMessages || conversationPhase === 'memo'}
-                  onClick={async () => {
+                  disabled={!hasUserMessages || !!activeMemoId}
+                  onClick={() => {
                     if (props.conversationId) {
-                      // Switch phase first
-                      useChatStore.getState().setConversationPhase(props.conversationId, 'memo');
-                      console.log('[Composer] Switched to memo phase');
-                      
-                      // Wait a bit for the state to update
-                      await new Promise(resolve => setTimeout(resolve, 10));
-                      
-                      // Immediately update system message to conversation.messages
-                      // This ensures the updated system message is saved to MongoDB
-                      const { updatePurposeInHistory } = await import('../../editors/editors');
-                      const conversation = useChatStore.getState().conversations.find(c => c.id === props.conversationId);
-                      if (conversation) {
-                        // Get current messages and update system message
-                        const enhancedHistory = updatePurposeInHistory(props.conversationId, conversation.messages);
-                        const systemMessage = enhancedHistory.find(msg => msg.role === 'system');
-                        if (systemMessage) {
-                          const existingSystemIndex = conversation.messages.findIndex(msg => msg.role === 'system');
-                          if (existingSystemIndex >= 0) {
-                            // Update existing system message
-                            const updatedMessages = [...conversation.messages];
-                            updatedMessages[existingSystemIndex] = systemMessage;
-                            useChatStore.getState().setMessages(props.conversationId, updatedMessages);
-                            console.log('[Composer] Updated system message after phase switch', {
-                              systemMessageText: systemMessage.text.substring(0, 100),
-                              messageCount: updatedMessages.length
-                            });
-                          } else {
-                            // Add system message if it doesn't exist
-                            const messagesWithSystem = [systemMessage, ...conversation.messages];
-                            useChatStore.getState().setMessages(props.conversationId, messagesWithSystem);
-                            console.log('[Composer] Added system message after phase switch', {
-                              systemMessageText: systemMessage.text.substring(0, 100),
-                              messageCount: messagesWithSystem.length
-                            });
-                          }
-                        }
-                      }
+                      // Create memo conversation
+                      useChatStore.getState().createMemo();
+                      console.log('[Composer] Created memo conversation');
                     }
                   }}
                 >
-                  {conversationPhase === 'memo' ? 'Memo phase active' : "I'm ready to write my memo"}
+                  {activeMemoId ? 'Memo active' : "I'm ready to write my memo"}
                 </Button>
               </Box>
             )}
@@ -864,7 +832,7 @@ export function Composer(props: {
               <Button
                   fullWidth variant='soft' 
                   color={chatLinkResponse?.type === 'success'? 'success' : chatLinkResponse?.type === 'error'? 'danger' : 'primary'}
-                  disabled={!props.conversationId || !chatLLM || !hasConversationActivity || conversationPhase !== 'memo' || !hasMemoMessages}
+                  disabled={!props.conversationId || !chatLLM || !hasConversationActivity || (conversationPhase === 'memo' && !hasMemoMessages)}
                   loading={chatLinkUploading}
                   onClick={handleSaveClicked}
                 >

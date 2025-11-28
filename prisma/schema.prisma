@@ -18,12 +18,14 @@ model LinkStorage {
   visibility LinkStorageVisibility
 
   dataType  LinkStorageDataType
-  dataTitle String?
   dataSize  Int
   data      Json
 
   // Study ID - associated with conversations for research tracking
   studyId String?
+  
+  // Search topic - topic for conversational search (also stored in data, but kept here for querying)
+  searchTopic String?
 
   upVotes    Int @default(0)
   downVotes  Int @default(0)

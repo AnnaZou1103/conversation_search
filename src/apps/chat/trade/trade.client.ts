@@ -54,10 +54,12 @@ export function createConversationFromJsonV1(part: ExportedConversationJsonV1 & 
     messages: part.messages,
     ...(part.userTitle && { userTitle: part.userTitle }),
     ...(part.autoTitle && { autoTitle: part.autoTitle }),
+    ...(part.studyId && { studyId: part.studyId }),
     ...(part.searchTopic && { searchTopic: part.searchTopic }),
     ...(part.standpoint && { standpoint: part.standpoint as any }),
     ...(part.strategy && { strategy: part.strategy as any }),
     ...(part.stats && { stats: part.stats }),
+    ...(part.phase && { phase: part.phase }),
     tokenCount: part.tokenCount || 0,
     created: part.created || Date.now(),
     updated: part.updated || Date.now(),
@@ -150,10 +152,12 @@ type ExportedConversationJsonV1 = {
   messages: DMessage[];  // Includes system message (role='system')
   userTitle?: string;
   autoTitle?: string;
+  studyId?: string;      // Study ID - associated with conversations for research tracking
   searchTopic?: string;
   standpoint?: string;
   strategy?: string;
   stats?: ConversationStats;
+  phase?: 'dialogue' | 'memo';  // Conversation phase
   created: number;
   updated: number | null;
 }
