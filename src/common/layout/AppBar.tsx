@@ -126,6 +126,11 @@ export function AppBar(props: { sx?: SxProps }) {
       )}
 
       {/* Center Items */}
+      {centerItems && (
+        <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', my: 'auto', flex: 1 }}>
+          {centerItems}
+        </Box>
+      )}
 
       {/* <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', my: 'auto' }}>
         {<AppBarTitle />}
