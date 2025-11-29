@@ -37,15 +37,29 @@ export function AppNews() {
           <Card>
           <CardContent sx={{ position: 'relative', pr:0 }}>
           <Typography level='h2' fontSize="xl"sx={{ mb: 0.5 }}  component='div'>Conversational Search Task</Typography>
-          In this task, you will have a conversation with a chatbot to explore information about a topic.
+          <p style={{ marginTop: 8, marginBottom: 8 }}>
+              In this task, you will have conversations with a chatbot to explore information about <strong>two topics</strong>. 
+              The chatbot will provide helpful information to answer your questions. Have a natural conversation with the chatbot.
+          </p>
+          
+          <Typography level='h3' fontSize="lg" sx={{ mt: 2, mb: 0.5 }} component='div'>Study Flow</Typography>
+          <p style={{ marginTop: 4, marginBottom: 8 }}>
+              You will complete the following steps for <strong>each</strong> of the two topics:
+          </p>
+          <ol style={{ marginTop: 8, marginBottom: 8, paddingInlineStart: 24 }}>
+              <li>Chat with the chatbot about the selected topic</li>
+              <li>Write a memo about the topic with the chatbot by clicking the button below the chat button</li>
+              <li>Submit your conversation by clicking the button below the memo button</li>
+              <li>Fill out the post survey (will open in a new tab)</li>
+          </ol>
+          <p style={{ marginTop: 8, marginBottom: 8 }}>
+              After completing these steps for the first topic, repeat the same process for the second topic.
+          </p>
+          
+          <Typography level='h3' fontSize="lg" sx={{ mt: 2, mb: 0.5 }} component='div'>Helpful Tips</Typography>
           <ul style={{ marginTop: 8, marginBottom: 8, paddingInlineStart: 24 }}>
-              <li>
-                  Ask the chatbot about a specific topic.
-              </li>
-              <li>The chatbot will provide helpful information to answer your questions.</li>
-              <li>You can ask follow-up questions to explore topics in more depth.</li>
-              <li>Feel free to express your thoughts and ask for clarification on anything.</li>
-              <li>Have a natural conversation - the chatbot is here to help you.</li>
+              <li>To start a new conversation for a different topic, click the button on the upper left corner.</li>
+              <li>To view these instructions again at any time, click the button on the upper right corner.</li>
           </ul>
           </CardContent>
           </Card>

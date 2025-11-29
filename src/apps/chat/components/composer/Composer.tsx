@@ -533,6 +533,15 @@ export function Composer(props: {
       if (response.type === 'success') {
         const chatTitle = conversationTitle(latestConversation) || undefined;
         addChatLinkItem(chatTitle, response.objectId, response.createdAt, response.expiresAt, response.deletionKey);
+        // Open Google Apps Script URL in a new tab after successful submit
+        // Add a small delay to ensure state updates are complete
+        setTimeout(() => {
+          try {
+            window.open('https://script.google.com/macros/s/AKfycby4e9Zn9Gmy1mEuSge1zTtNuFl7dniY7uQph47RGeE4EJa8oqKCXsGppAE_5d6l6Fhe/exec?page=post', '_blank');
+          } catch (error) {
+            console.error('[Submit] Failed to open new tab:', error);
+          }
+        }, 100);
       }
     } catch (error: any) {
       setChatLinkResponse({
@@ -832,11 +841,11 @@ export function Composer(props: {
               <Button
                   fullWidth variant='soft' 
                   color={chatLinkResponse?.type === 'success'? 'success' : chatLinkResponse?.type === 'error'? 'danger' : 'primary'}
-                  disabled={!props.conversationId || !chatLLM || !hasConversationActivity || (conversationPhase === 'memo' && !hasMemoMessages)}
+                  disabled={!props.conversationId || !chatLLM || !hasConversationActivity || conversationPhase !== 'memo'}
                   loading={chatLinkUploading}
                   onClick={handleSaveClicked}
                 >
-                {chatLinkResponse?.type === 'success' ? 'Access code: NEU2025' : chatLinkResponse?.type === 'error'? 'Please try again': 'Submit'}
+                {chatLinkResponse?.type === 'success' ? 'Submitted ✓' : chatLinkResponse?.type === 'error'? 'Please try again': 'Submit'}
               </Button>
 
             </Box>
